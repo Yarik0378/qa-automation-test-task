@@ -1,0 +1,63 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the outdated run.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.project }} tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [ui, api]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Install Chromium
+        if: matrix.project == 'ui'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run ${{ matrix.project }} tests
+        run: npx playwright test --project=${{ matrix.project }}
+
+      # Uploaded even when tests fail, so the report explains the failure.
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload traces, screenshots and JUnit results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.project }}
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
