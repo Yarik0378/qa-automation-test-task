@@ -1,0 +1,104 @@
+# Тест-план
+
+> **Це початковий план**, складений до написання коду (результат першого промпту, див. [AI_WORKLOG.md](../AI_WORKLOG.md)).
+> Фактичне покриття описане в [README](../README.md#що-покрито). Відхилення від плану зібрані в розділі [Що змінилось відносно плану](#що-змінилось-відносно-плану).
+
+## Обсяг
+За ТЗ потрібно:
+- UI-тести на Playwright + TypeScript для [saucedemo.com](https://www.saucedemo.com) (`standard_user`);
+- API-тести для [restful-booker](https://restful-booker.herokuapp.com/apidoc);
+- CI на GitHub Actions зі звітом як артефактом;
+- AI_WORKLOG.md і README з баг-репортами.
+
+Бонус: генератор «тест-кейс текстом → Playwright-тест». Його роблю окремим етапом, поза бюджетом у 4 години.
+
+## Етапи
+
+| # | Етап | Бюджет |
+|---|---|---|
+| 0 | Репозиторій: `git init`, `.gitignore`, `.gitattributes` (LF), каркас README і AI_WORKLOG, публічний GitHub-репо | ~15 хв |
+| 1 | Каркас: Playwright + TypeScript, конфіг, структура з Page Object, npm-скрипти, CLAUDE.md, smoke | ~20 хв |
+| 2 | UI-тести | ~70 хв |
+| 3 | API-тести | ~50 хв |
+| 4 | CI | ~25 хв |
+| 5–6 | README і фіналізація AI_WORKLOG | ~40 хв |
+| — | Буфер на нестабільність публічних стендів | ~20 хв |
+| 7 | Бонус: генератор тестів | поза бюджетом |
+
+Проєкт тримаю поза OneDrive (`D:\Projects`), щоб синхронізація не чіпала `node_modules` і не блокувала файли під час прогонів.
+
+## Архітектура
+```
+.github/workflows/tests.yml
+tests/ui/        login, catalog, sorting, cart, checkout
+tests/api/       booking-flow, booking-negative
+pages/           LoginPage, InventoryPage, CartPage, CheckoutPage (Page Object)
+api/             BookingClient: обгортка над APIRequestContext
+fixtures/        розширений test з POM-фікстурами і фікстурою залогіненого користувача
+test-data/       користувачі, фабрика бронювань з унікальними даними
+```
+- `playwright.config.ts` має два проєкти: `ui` (chromium, baseURL saucedemo) і `api` (без браузера, baseURL restful-booker).
+- Trace і скриншот зберігаються лише для тестів, що впали. У CI ставлю retries, бо herokuapp інколи «засинає».
+- Репортери: `list` і `html`, у CI ще `junit`.
+
+## UI-тести (saucedemo)
+
+**Позитивні:**
+| ID | Сценарій | Ключові перевірки |
+|---|---|---|
+| UI-01 | Логін `standard_user` | URL `/inventory.html`, 6 товарів, заголовок «Products» |
+| UI-02 | Каталог → картка товару | назва, ціна й опис на сторінці деталей збігаються з карткою в списку; «Back to products» |
+| UI-03 | Сортування (параметризовано: A-Z, Z-A, ціна за зростанням і за спаданням) | фактичний порядок дорівнює відсортованому масиву |
+| UI-04 | Кошик: додати 2 товари, прибрати 1 | бейдж 2→1, вміст `/cart.html`, кнопки Add↔Remove |
+| UI-05 | E2E-чекаут 2 товарів | Item total = сума цін; Tax = 8%; Total = сума; «Thank you for your order!»; кошик порожній |
+| UI-06 | Logout і захист маршруту | після logout пряме відкриття `/inventory.html` → редирект на логін з помилкою |
+
+**Негативні та граничні:**
+| ID | Сценарій | Очікування |
+|---|---|---|
+| UI-N1 | `locked_out_user` | «Sorry, this user has been locked out.» |
+| UI-N2 | Невалідні креди (параметризовано: порожній username, порожній password, невірний пароль) | відповідне повідомлення, користувач лишається на логіні |
+| UI-N3 | Чекаут з порожніми обовʼязковими полями (First, Last, Zip по черзі) | «Error: … is required», на step-two не переходить |
+
+**Кандидати в баги** (спершу перевіряю вручну): чекаут із порожнім кошиком доходить до «Thank you».
+
+## API-тести (restful-booker)
+
+**API-01, основний флоу** (`test.describe.serial`, кроки через `test.step`):
+`POST /auth` → token → `POST /booking` → `GET` (дані збігаються) → `PUT` з токеном → `GET` (оновлено) → `DELETE` → `GET` → **404**.
+
+Стенд публічний і спільний, тому тестові дані генерую з унікальним `firstname`.
+
+**Негативні:**
+| ID | Кейс | Очікувано | Гіпотеза щодо фактичного |
+|---|---|---|---|
+| API-N1 | `POST /auth` з невірним паролем | 401 | 200 + `{"reason":"Bad credentials"}`, кандидат у баг |
+| API-N2 | `PUT` / `DELETE` без токена | 403 | 403 |
+| API-N3 | `POST /booking` без обовʼязкових полів | 400 | 500, кандидат у баг |
+| API-N4 | `GET /booking/<неіснуючий id>` | 404 | 404 |
+
+Ще один кандидат: `DELETE` повертає `201 Created` замість `200`/`204`.
+
+**Як тестую відомі баги:** assert на **очікувану** поведінку плюс `test.fail()` з анотацією `BUG-xx`. CI лишається зеленим, а коли баг полагодять, тест почне падати, і про це стане відомо.
+
+## CI
+- Тригери: `push`, `pull_request`, `workflow_dispatch`.
+- Два паралельні jobs, `ui` і `api`: `npm ci`, typecheck, тести.
+- Звіт `playwright-report/` і `test-results/` завантажуються як артефакт навіть після падіння.
+- `concurrency` скасовує застарілі прогони. Бейдж статусу в README.
+
+## Свідомо не покриваю
+- Інші браузери: лише chromium, заради часу.
+- Користувачі `problem_user`, `error_user`, `performance_glitch_user`, `visual_user`: максимум exploratory-нотатки, без автотестів.
+- Візуальна регресія, доступність (a11y), навантаження.
+- `PATCH` і фільтри `GET /booking?firstname=…`, контрактні тести через JSON Schema.
+
+## Definition of Done
+1. Локально `npm run typecheck` і `npx playwright test` зелені (тести на відомі баги рахуються як expected fail).
+2. Тести незалежні: `--repeat-each=3 --workers=4` проходить без флейків.
+3. У CI обидва jobs зелені, артефакт зі звітом завантажується і відкривається.
+4. Інструкцію «Як запустити» з README відтворено зі свіжого clone.
+5. Усі пункти ТЗ відмічені в чек-листі README.
+
+## Що змінилось відносно плану
+_Заповнюється наприкінці роботи._
