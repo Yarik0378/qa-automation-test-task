@@ -17,6 +17,7 @@ npm run test:api                # лише restful-booker
 npx playwright test -g "UI-03"  # один тест за ID
 npm run report                  # відкрити HTML-звіт
 ```
+Playwright MCP підключається автоматично з [.mcp.json](.mcp.json) після `npm ci`. Сервер стоїть у devDependencies, тож його версія зафіксована в lock-файлі.
 
 ## Структура
 ```
@@ -31,6 +32,13 @@ docs/          тест-план
 Тести імпортують `test` і `expect` з `fixtures/`, а не напряму з `@playwright/test` (виняток лише smoke-тести каркасу).
 
 ## Конвенції
+
+**Дослідження сторінки через Playwright MCP (обовʼязково для UI)**
+- Перед тим як писати чи змінювати UI-тест або Page Object, пройди сценарій на живому сайті через Playwright MCP (сервер `playwright` з [.mcp.json](.mcp.json)): `browser_navigate` → дії користувача (`browser_click`, `browser_type`, `browser_fill_form`, `browser_select_option`) → `browser_snapshot`.
+- Локатори бери з accessibility snapshot і з коду, який MCP генерує для кожної дії. MCP запущений з `--test-id-attribute data-test`, тому його локатори збігаються з `getByTestId()` у тестах.
+- Стани, що зʼявляються лише після дій (помилки валідації, бейдж кошика, кроки чекауту, редиректи), теж перевіряй через MCP, а не припускай.
+- **Заборонено:** писати локатори з памʼяті чи загальних знань про сайт, а також витягати сирий HTML (`curl`, WebFetch, `page.content()`) і шукати в ньому `data-test="..."`.
+- Якщо MCP недоступний, зупинись і скажи про це людині. Не переходь на вгадування.
 
 **Локатори (UI)**
 - Пріоритет: `getByTestId()` (у конфігу `testIdAttribute: 'data-test'`), потім `getByRole()`, потім текст. CSS і XPath лише якщо нічого іншого немає, з коментарем чому.
