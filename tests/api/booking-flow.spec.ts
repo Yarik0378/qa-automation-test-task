@@ -29,9 +29,10 @@ test('API-01: booking CRUD flow - auth, create, update, delete, verify it is gon
     expect(response.status()).toBe(200);
     const body = (await response.json()) as { bookingid: unknown; booking: unknown };
     expect(typeof body.bookingid).toBe('number');
-    expect(body.booking).toEqual(original);
     const bookingid = body.bookingid as number;
+    // Register for cleanup before further asserts, so a failing check does not leave the booking behind.
     trackBooking(bookingid);
+    expect(body.booking).toEqual(original);
     return bookingid;
   });
 
