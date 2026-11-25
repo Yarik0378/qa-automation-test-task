@@ -8,9 +8,9 @@ test('UI-02: product details match the catalog card', async ({ page, inventoryPa
   await inventoryPage.openProduct(name);
 
   await expect(page).toHaveURL(/inventory-item\.html\?id=\d+/);
-  await expect(productPage.details.getByRole('img', { name })).toBeVisible();
-  await expect(productPage.details.getByText(name, { exact: true })).toBeVisible();
-  await expect(productPage.details.getByText(priceText, { exact: true })).toBeVisible();
+  await expect(productPage.image(name)).toBeVisible();
+  await expect(productPage.text(name)).toBeVisible();
+  await expect(productPage.text(priceText)).toBeVisible();
   await expect(productPage.addToCartButton).toBeVisible();
 
   await productPage.backToProducts();

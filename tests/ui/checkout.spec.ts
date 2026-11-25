@@ -1,3 +1,4 @@
+import { errors } from '@playwright/test';
 import { test, expect, knownBug } from '../../fixtures/test';
 import { roundCents } from '../../pages/money';
 import { customer, products, TAX_RATE, type CheckoutInfo } from '../../test-data/products';
@@ -62,26 +63,47 @@ for (const { field, error } of missingFields) {
   });
 }
 
-test('UI-N3: an order cannot be placed with an empty cart', async ({ inventoryPage, cartPage, checkoutPage }) => {
+test('UI-N3: an order cannot be placed with an empty cart', async ({
+  page,
+  inventoryPage,
+  cartPage,
+  checkoutPage,
+}) => {
   knownBug('BUG-001', 'order with an empty cart is confirmed as dispatched');
 
   await inventoryPage.openCart();
+  await expect(page).toHaveURL(/\/cart\.html$/);
   await expect(cartPage.itemTitles).toHaveCount(0);
 
   // No requirement says HOW the app must block it (disabled button, error, redirect),
-  // so any step that cannot be completed counts as "blocked".
-  const orderPlaced = await test.step('try to place an order', async () => {
-    try {
-      await cartPage.checkout();
-      await checkoutPage.fillInformation(customer);
-      await checkoutPage.continue();
-      await checkoutPage.finish();
-      await checkoutPage.completeHeader.waitFor({ timeout: 5_000 });
-      return true;
-    } catch {
-      return false;
-    }
-  });
+  // so a step that times out counts as "blocked". Only timeouts are caught; the step
+  // and reason are recorded, because a broken locator also times out and must be
+  // told apart from a real fix when reading the report.
+  const steps: [string, () => Promise<void>][] = [
+    ['click Checkout', () => cartPage.checkout()],
+    ['fill customer information', () => checkoutPage.fillInformation(customer)],
+    ['click Continue', () => checkoutPage.continue()],
+    ['click Finish', () => checkoutPage.finish()],
+    ['wait for order confirmation', () => checkoutPage.completeHeader.waitFor({ timeout: 5_000 })],
+  ];
 
-  expect(orderPlaced, 'an order without items must not be confirmed').toBe(false);
+  let blockedAt: string | undefined;
+  for (const [name, action] of steps) {
+    try {
+      await test.step(name, action);
+    } catch (error) {
+      if (!(error instanceof errors.TimeoutError)) throw error;
+      blockedAt = name;
+      const reason = error.message
+        .replace(/\u001b\[[0-9;]*m/g, '') // strip terminal colors
+        .split('\n')
+        .filter((line) => /Timeout|waiting for/.test(line))
+        .map((line) => line.trim())
+        .join(' | ');
+      test.info().annotations.push({ type: 'blocked-at', description: `${name}: ${reason}` });
+      break;
+    }
+  }
+
+  expect(blockedAt, 'an order without items must not be confirmed').toBeDefined();
 });
