@@ -20,6 +20,7 @@
     "url": "git+https://github.com/Yarik0378/qa-automation-test-task.git"
   },
   "devDependencies": {
+    "@playwright/mcp": "^0.0.86",
     "@playwright/test": "^1.65.1",
     "@types/node": "^26.6.10",
     "typescript": "^7.0.2"
