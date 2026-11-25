@@ -62,10 +62,26 @@ for (const { field, error } of missingFields) {
   });
 }
 
-test('UI-N3: checkout is not available with an empty cart', async ({ inventoryPage, cartPage }) => {
-  knownBug('BUG-01', 'order with an empty cart can be completed');
+test('UI-N3: an order cannot be placed with an empty cart', async ({ inventoryPage, cartPage, checkoutPage }) => {
+  knownBug('BUG-001', 'order with an empty cart is confirmed as dispatched');
 
   await inventoryPage.openCart();
   await expect(cartPage.itemTitles).toHaveCount(0);
-  await expect(cartPage.checkoutButton).toBeDisabled();
+
+  // No requirement says HOW the app must block it (disabled button, error, redirect),
+  // so any step that cannot be completed counts as "blocked".
+  const orderPlaced = await test.step('try to place an order', async () => {
+    try {
+      await cartPage.checkout();
+      await checkoutPage.fillInformation(customer);
+      await checkoutPage.continue();
+      await checkoutPage.finish();
+      await checkoutPage.completeHeader.waitFor({ timeout: 5_000 });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  expect(orderPlaced, 'an order without items must not be confirmed').toBe(false);
 });

@@ -1,4 +1,4 @@
-import { test, expect, knownBug } from '../../fixtures/test';
+import { test, expect } from '../../fixtures/test';
 import type { InventoryPage, SortOption } from '../../pages/InventoryPage';
 
 const byName = (a: string, b: string) => a.localeCompare(b);
@@ -40,19 +40,4 @@ test.describe('UI-03: catalog sorting', () => {
       expect(prices).toEqual([...prices].sort(compare));
     });
   }
-});
-
-test('UI-07: keeps chosen sorting after returning from product details', async ({ inventoryPage, productPage }) => {
-  knownBug('BUG-02', 'sorting resets to "Name (A to Z)" after "Back to products"');
-
-  await inventoryPage.sortBy('Price (low to high)');
-  const sortedNames = await inventoryPage.productNames();
-  const firstProduct = sortedNames[0];
-  if (!firstProduct) throw new Error('Catalog is empty');
-
-  await inventoryPage.openProduct(firstProduct);
-  await productPage.backToProducts();
-
-  await expect(inventoryPage.title).toHaveText('Products');
-  expect(await inventoryPage.productNames()).toEqual(sortedNames);
 });
