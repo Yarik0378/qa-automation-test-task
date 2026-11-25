@@ -1,6 +1,6 @@
 # AI Worklog
 
-**Агент:** Claude Code (VS Code extension), модель Claude Fable 5.2.
+**Агент:** Claude Code (VS Code extension), модель Claude Opus 5.5, effort: medium. (Етап 0 випадково пройшов на Claude Fable 5.2: модель забув перемкнути на старті.)
 **Режим роботи:** агент пише код поетапно; після кожного етапу я роблю review, виправляю і лише потім даю команду продовжувати.
 **Інструкції агенту:** [CLAUDE.md](CLAUDE.md) (з'явиться на етапі 1).
 
