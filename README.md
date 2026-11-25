@@ -1,5 +1,7 @@
 # QA Automation: тестове завдання (Middle)
 
+[![tests](https://github.com/Yarik0378/qa-automation-test-task/actions/workflows/tests.yml/badge.svg)](https://github.com/Yarik0378/qa-automation-test-task/actions/workflows/tests.yml)
+
 UI-тести [saucedemo.com](https://www.saucedemo.com) і API-тести [restful-booker](https://restful-booker.herokuapp.com/apidoc) на **Playwright + TypeScript**, з CI на GitHub Actions.
 
 > 🚧 Робота триває. Розділи нижче заповнюються поетапно.
@@ -17,7 +19,7 @@ UI-тести [saucedemo.com](https://www.saucedemo.com) і API-тести [rest
 ## Стек
 - [Playwright Test](https://playwright.dev) 1.65, лише Chromium
 - TypeScript 7 (strict), перевірка типів через `tsc` без emit
-- Node.js ≥ 20
+- Node.js: у `package.json` задано `engines: >=20`, але фактично перевірено лише на Node 26 (локально 26.8.1, у CI 26.13.1; версія в CI зафіксована як `26`)
 - GitHub Actions
 
 Тест-план: [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
@@ -253,7 +255,29 @@ _TBD_
 **Наслідок для тестів:** очікування для негативних кейсів не можна взяти з документації; у тестах і README для кожного прямо вказано, звідки взято очікування.
 
 ## CI
-_TBD_
+
+Workflow: [.github/workflows/tests.yml](.github/workflows/tests.yml) (GitHub Actions).
+
+**Коли запускається:** на кожен `push` у будь-яку гілку, на `pull_request` і вручну (кнопка **Run workflow**, `workflow_dispatch`). Новий push у ту саму гілку скасовує застарілий запуск того ж типу (`concurrency`). Push у гілку з відкритим PR запускає workflow двічі (`push` і `pull_request` мають різні `github.ref`); це свідомо не прибрано, бо ТЗ вимагає запуск саме на push, а дублювання коштує лише хвилин CI.
+
+**Що робить:** два паралельні jobs, `ui tests` і `api tests` (matrix). У кожному: `npm ci` → `npm run typecheck` → для UI `npx playwright install --with-deps chromium` → `npx playwright test --project=<ui|api>`.
+
+**Звіт як артефакт.** Після кожного запуску, навіть якщо тести впали, завантажуються:
+| Артефакт | Що всередині |
+|---|---|
+| `playwright-report-ui`, `playwright-report-api` | HTML-звіт Playwright (`index.html`) |
+| `test-results-ui`, `test-results-api` | `junit.xml` і папки тестів, що впали. Для неочікуваного падіння: UI — `trace.zip`, скриншот `test-failed-1.png`, `error-context.md`; API — `trace.zip`, `error-context.md`. Для тестів на відомі баги (expected fail) — лише `error-context.md`: Playwright з `trace: 'retain-on-failure'` не зберігає trace для очікуваного падіння |
+
+Артефакти зберігаються 14 днів.
+
+**Як відкрити звіт:**
+1. Відкрити запуск у вкладці [Actions](https://github.com/Yarik0378/qa-automation-test-task/actions/workflows/tests.yml).
+2. Унизу сторінки, у блоці **Artifacts**, завантажити `playwright-report-ui` або `playwright-report-api` і розпакувати.
+3. Відкрити звіт: `npx playwright show-report <розпакована-папка>` (подвійний клік по `index.html` може не показати trace через обмеження браузера для локальних файлів).
+
+**Відмінності від локального запуску** (з [playwright.config.ts](playwright.config.ts), за `CI=true`): `retries: 2`, `failOnFlakyTests`, `forbidOnly` (забутий `test.only` валить запуск), додатково репортер JUnit. **Flaky валить CI** (`failOnFlakyTests: true` у CI). Retries лишаються лише як діагностика: тест, що впав і пройшов з повторної спроби, позначається як **flaky**, і job стає червоним. Свідомий компроміс: публічний restful-booker на herokuapp інколи відповідає повільно, тож CI зрідка може червоніти не через наш код, зате нестабільність не ховається під зеленим бейджем. Перевірено локально з `CI=true` на тимчасовому тесті, що падає з першої спроби: `1 flaky`, код виходу 1.
+
+**Перший запуск:** [#45630053688](https://github.com/Yarik0378/qa-automation-test-task/actions/runs/45630053688) для коміту `979559b`, обидва jobs `success`: UI 17 тестів (UI-N3 expected fail), API 6 тестів (API-N2 expected fail), без flaky, Node 26.13.1. Чотири артефакти завантажено; вміст перевірено (`index.html`, `junit.xml` з `tests="17"` / `tests="6"`, `failures="0"`). Вміст `test-results` для неочікуваного падіння перевірено локально з `CI=true` на навмисно зламаних тимчасових тестах (у репозиторій не потрапили).
 
 ## Робота з ШІ-агентом
 Див. [AI_WORKLOG.md](AI_WORKLOG.md) та інструкції агенту в [CLAUDE.md](CLAUDE.md).
