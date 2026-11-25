@@ -14,7 +14,12 @@ UI-тести [saucedemo.com](https://www.saucedemo.com) і API-тести [rest
 - [Робота з ШІ-агентом](#робота-з-ші-агентом)
 
 ## Стек
-_TBD_
+- [Playwright Test](https://playwright.dev) 1.65, лише Chromium
+- TypeScript 7 (strict), перевірка типів через `tsc` без emit
+- Node.js ≥ 20
+- GitHub Actions
+
+Тест-план: [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
 ## Як запустити
 _TBD_
