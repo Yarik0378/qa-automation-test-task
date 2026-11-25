@@ -1,0 +1,50 @@
+# Captured: 2026-11-25 15:50:21 +0200 | curl 8.22.0 (x86_64-w64-mingw32) | Windows 11 Pro 10.0.26200
+# Lines starting with '>' are the request sent, '<' the response headers, then the response body.
+# Precondition: booking 4943 created with POST /booking (firstname QaEvidence1795614618); token obtained with POST /auth (admin).
+
+## Request 1: DELETE with valid token
+# Command: curl -X DELETE https://restful-booker.herokuapp.com/booking/4943 -H Cookie: token=<valid>
+> DELETE /booking/4943 HTTP/1.1
+> Host: restful-booker.herokuapp.com
+> User-Agent: curl/8.22.0
+> Accept: */*
+> Cookie: token=<valid>
+> 
+< HTTP/1.1 201 Created
+< Content-Length: 7
+< Content-Type: text/plain; charset=utf-8
+< Date: Wed, 25 Nov 2026 13:50:22 GMT
+< 
+# Body:
+Created
+
+## Request 2: GET the deleted booking
+# Command: curl https://restful-booker.herokuapp.com/booking/4943 -H Accept: application/json
+> GET /booking/4943 HTTP/1.1
+> Host: restful-booker.herokuapp.com
+> User-Agent: curl/8.22.0
+> Accept: application/json
+> 
+< HTTP/1.1 404 Not Found
+< Content-Length: 9
+< Content-Type: text/plain; charset=utf-8
+< Date: Wed, 25 Nov 2026 13:50:22 GMT
+< 
+# Body:
+Not Found
+
+## Request 3: DELETE the already deleted booking
+# Command: curl -X DELETE https://restful-booker.herokuapp.com/booking/4943 -H Cookie: token=<valid>
+> DELETE /booking/4943 HTTP/1.1
+> Host: restful-booker.herokuapp.com
+> User-Agent: curl/8.22.0
+> Accept: */*
+> Cookie: token=<valid>
+> 
+< HTTP/1.1 405 Method Not Allowed
+< Content-Length: 18
+< Content-Type: text/plain; charset=utf-8
+< Date: Wed, 25 Nov 2026 13:50:23 GMT
+< 
+# Body:
+Method Not Allowed

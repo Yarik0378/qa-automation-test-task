@@ -1,0 +1,34 @@
+# Captured: 2026-11-25 15:50:18 +0200 | curl 8.22.0 (x86_64-w64-mingw32) | Windows 11 Pro 10.0.26200
+# Lines starting with '>' are the request sent, '<' the response headers, then the response body.
+
+## Step 1: create booking without required fields
+# Command: curl -X POST https://restful-booker.herokuapp.com/booking -H Content-Type: application/json -H Accept: application/json -d {"firstname":"QaEvidence1795614618"}
+> POST /booking HTTP/1.1
+> Host: restful-booker.herokuapp.com
+> User-Agent: curl/8.22.0
+> Content-Type: application/json
+> Accept: application/json
+> Content-Length: 36
+> 
+< HTTP/1.1 500 Internal Server Error
+< Content-Length: 21
+< Content-Type: text/plain; charset=utf-8
+< Date: Wed, 25 Nov 2026 13:50:19 GMT
+< 
+# Body:
+Internal Server Error
+
+## Step 2: check that no booking was created
+# Command: curl https://restful-booker.herokuapp.com/booking?firstname=QaEvidence1795614618 -H Accept: application/json
+> GET /booking?firstname=QaEvidence1795614618 HTTP/1.1
+> Host: restful-booker.herokuapp.com
+> User-Agent: curl/8.22.0
+> Accept: application/json
+> 
+< HTTP/1.1 200 OK
+< Content-Length: 2
+< Content-Type: application/json; charset=utf-8
+< Date: Wed, 25 Nov 2026 13:50:20 GMT
+< 
+# Body:
+[]
