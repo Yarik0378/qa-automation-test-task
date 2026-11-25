@@ -1,0 +1,27 @@
+{
+  "name": "qa-automation-test-task",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UI tests for saucedemo.com and API tests for restful-booker on Playwright + TypeScript",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --project=ui",
+    "test:api": "playwright test --project=api",
+    "test:headed": "playwright test --project=ui --headed",
+    "report": "playwright show-report",
+    "typecheck": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yarik0378/qa-automation-test-task.git"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.10",
+    "typescript": "^7.0.2"
+  }
+}
