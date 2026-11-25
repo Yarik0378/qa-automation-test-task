@@ -29,7 +29,7 @@ fixtures/      розширений `test` з фікстурами POM і клі
 test-data/     користувачі, фабрики тестових даних
 docs/          тест-план
 ```
-Тести імпортують `test` і `expect` з `fixtures/`, а не напряму з `@playwright/test` (виняток лише smoke-тести каркасу).
+UI-тести імпортують `test` і `expect` з `fixtures/`, а не напряму з `@playwright/test`. Виняток: API health-check [tests/api/health.spec.ts](tests/api/health.spec.ts), якому фікстури не потрібні.
 
 ## Конвенції
 

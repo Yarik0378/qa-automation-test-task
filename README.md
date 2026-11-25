@@ -33,14 +33,16 @@ _TBD_
 | ID | Сценарій | Файл |
 |---|---|---|
 | UI-01 | Логін `standard_user`: URL, заголовок «Products», 6 товарів | [login.spec.ts](tests/ui/login.spec.ts) |
-| UI-02 | Картка товару: зображення, назва і ціна збігаються зі списком; «Back to products» | [catalog.spec.ts](tests/ui/catalog.spec.ts) |
+| UI-02 | Картка товару: назва і ціна збігаються з карткою в списку, є зображення з alt-текстом назви товару; «Back to products» | [catalog.spec.ts](tests/ui/catalog.spec.ts) |
 | UI-03 | Сортування: A→Z, Z→A, ціна ↑, ціна ↓ (4 тести) | [sorting.spec.ts](tests/ui/sorting.spec.ts) |
 | UI-04 | Кошик: додати 2 товари, прибрати 1; бейдж, кнопки Add↔Remove, вміст `/cart.html` | [cart.spec.ts](tests/ui/cart.spec.ts) |
-| UI-05 | E2E-чекаут 2 товарів: Item total, податок 8%, Total, «Thank you for your order!», кошик порожній | [checkout.spec.ts](tests/ui/checkout.spec.ts) |
+| UI-05 | E2E-чекаут 2 товарів: Item total = сума цін, податок 8%\*, Total, «Thank you for your order!», кошик порожній | [checkout.spec.ts](tests/ui/checkout.spec.ts) |
 | UI-06 | Logout і захист маршруту `/inventory.html` | [login.spec.ts](tests/ui/login.spec.ts) |
 | UI-N1 | Відмова в логіні: порожній username, порожній password, невірний пароль, `locked_out_user` (4 тести) | [login.spec.ts](tests/ui/login.spec.ts) |
 | UI-N2 | Чекаут без First Name / Last Name / Postal Code (3 тести) | [checkout.spec.ts](tests/ui/checkout.spec.ts) |
 | UI-N3 | Замовлення з порожнім кошиком не має підтверджуватись (**BUG-001**, expected fail) | [checkout.spec.ts](tests/ui/checkout.spec.ts) |
+
+\* Ставки податку немає в жодній вимозі. 8% і округлення до центів виведені зі спостереження на сайті ($39.98 → $3.20, $29.99 → $2.40). Якщо сайт змінить ставку чи спосіб округлення, UI-05 впаде; це свідомо, бо зміна суми замовлення має бути помічена.
 
 ## Що свідомо не покрито
 
@@ -111,7 +113,7 @@ _API-розділ буде уточнено на етапі 3._
 - [BUG-001-2-overview-zero-total.png](docs/bugs/BUG-001-2-overview-zero-total.png): крок 3, огляд без товарів із сумою $0.00
 - [BUG-001-3-order-complete.png](docs/bugs/BUG-001-3-order-complete.png): крок 4, «Thank you for your order!»
 
-**Автотест:** UI-N3 у [tests/ui/checkout.spec.ts](tests/ui/checkout.spec.ts), позначений `test.fail()`. Тест не вимагає конкретного способу блокування (неактивна кнопка, помилка, редирект), а перевіряє лише те, що підтвердження замовлення не з'являється.
+**Автотест:** UI-N3 у [tests/ui/checkout.spec.ts](tests/ui/checkout.spec.ts), позначений `test.fail()`. Тест не вимагає конкретного способу блокування (неактивна кнопка, помилка, редирект), а перевіряє лише те, що підтвердження замовлення не з'являється. **Обмеження:** якщо тест раптом стане «unexpectedly passed», це може означати і виправлений баг, і битий локатор: в обох випадках крок не виконується за таймаутом. Щоб їх розрізнити, тест записує в анотацію `blocked-at` крок і локатор, на якому зупинився (перевірено навмисно зламаним локатором Checkout).
 
 <a id="bug-002"></a>
 ### BUG-002: Checkout: Overview: «Item total» порожнього замовлення показано як `$0`, а не `$0.00`
